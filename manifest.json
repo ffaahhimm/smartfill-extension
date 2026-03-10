@@ -1,0 +1,24 @@
+{
+  "manifest_version": 3,
+  "name": "SmartFill - Auto Form Filler",
+  "version": "1.0",
+  "description": "Save your personal details once, auto-fill any form instantly.",
+  "permissions": [
+    "storage",
+    "activeTab",
+    "scripting"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icon.png",
+      "48": "icon.png",
+      "128": "icon.png"
+    }
+  },
+  "icons": {
+    "16": "icon.png",
+    "48": "icon.png",
+    "128": "icon.png"
+  }
+}

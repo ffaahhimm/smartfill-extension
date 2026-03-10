@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>SmartFill</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --purple:     #7b4ecc;
+      --purple-d:   #6a3db8;
+      --purple-l:   #f3eeff;
+      --pink:       #e91e8c;
+      --blue:       #0099e5;
+      --blue-l:     #e8f6fd;
+      --green:      #2ecc71;
+      --green-l:    #e9f9f1;
+      --red:        #e74c3c;
+      --amber:      #f39c12;
+      --text:       #333333;
+      --sub:        #777777;
+      --light:      #aaaaaa;
+      --border:     #e0e0e0;
+      --bg:         #f5f5f5;
+      --white:      #ffffff;
+      --r:          4px;
+    }
+
+    body {
+      width: 420px;
+      background: var(--bg);
+      font-family: 'Open Sans', sans-serif;
+      color: var(--text);
+      font-size: 13px;
+    }
+
+    /* ══ HEADER BAR ══ */
+    .hdr {
+      background: linear-gradient(135deg, #7b4ecc 0%, #9b6ee0 100%);
+      padding: 0 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 54px;
+      position: relative;
+    }
+    .hdr::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--pink), var(--blue), var(--purple));
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .logo-svg-wrap {
+      position: relative;
+      width: 36px; height: 36px; flex-shrink: 0;
+    }
+    .logo-svg-wrap svg {
+      width: 36px; height: 36px;
+      filter: drop-shadow(0 2px 6px rgba(0,0,0,0.3));
+    }
+
+    .brand-text { line-height: 1.1; }
+    .brand-name {
+      font-size: 16px; font-weight: 700;
+      color: #fff; letter-spacing: -0.2px;
+    }
+    .brand-sub { font-size: 10px; color: rgba(255,255,255,0.7); font-weight: 400; }
+
+    /* Completion pill */
+    .comp-pill {
+      display: flex; flex-direction: column; align-items: flex-end; gap: 4px;
+    }
+    .comp-nums {
+      font-size: 10px; color: rgba(255,255,255,0.9); font-weight: 600;
+    }
+    .comp-bar-bg {
+      width: 80px; height: 6px;
+      background: rgba(255,255,255,0.25);
+      border-radius: 10px; overflow: hidden;
+    }
+    .comp-bar-fill {
+      height: 100%; border-radius: 10px;
+      background: #fff;
+      transition: width 0.5s ease;
+      width: 0%;
+    }
+
+    /* ══ NAV TABS (top level) ══ */
+    .nav-tabs {
+      background: var(--purple-d);
+      display: flex;
+      padding: 0 16px;
+    }
+    .nav-tab {
+      padding: 10px 14px;
+      font-size: 12px; font-weight: 600;
+      color: rgba(255,255,255,0.7);
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .nav-tab:hover { color: #fff; }
+    .nav-tab.active {
+      color: #fff;
+      border-bottom-color: var(--pink);
+      background: rgba(255,255,255,0.08);
+    }
+
+    /* ══ SUB TABS (second level) ══ */
+    .sub-tabs {
+      background: var(--white);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      padding: 0 16px;
+      gap: 0;
+    }
+    .sub-tab {
+      padding: 9px 14px;
+      font-size: 12px; font-weight: 500;
+      color: var(--sub);
+      cursor: pointer;
+      border: 1px solid transparent;
+      border-bottom: none;
+      margin-bottom: -1px;
+      border-radius: var(--r) var(--r) 0 0;
+      transition: all 0.15s;
+    }
+    .sub-tab:hover { color: var(--text); background: var(--bg); }
+    .sub-tab.active {
+      color: var(--purple);
+      font-weight: 600;
+      background: var(--white);
+      border-color: var(--border);
+      border-bottom-color: var(--white);
+    }
+
+    /* ══ PANELS ══ */
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    /* ══ FILL PANEL ══ */
+    .fill-wrap { padding: 14px 16px; background: var(--bg); }
+
+    /* Last fill notice */
+    .last-bar {
+      display: none;
+      align-items: center; gap: 8px;
+      background: var(--green-l);
+      border-left: 3px solid var(--green);
+      border-radius: 0 var(--r) var(--r) 0;
+      padding: 8px 12px; margin-bottom: 12px;
+      font-size: 11px; color: #1a9e52; font-weight: 600;
+    }
+    .last-bar.on { display: flex; }
+
+    /* White content card */
+    .content-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+    .card-header {
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 14px;
+      font-size: 12px; font-weight: 600; color: var(--sub);
+      text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .card-body { padding: 14px; }
+
+    .hero-row {
+      display: flex; align-items: center; gap: 12px;
+    }
+    .hero-icon-wrap {
+      width: 44px; height: 44px; flex-shrink: 0;
+      background: linear-gradient(135deg, var(--purple) 0%, #9b6ee0 100%);
+      border-radius: 50%;
+      display: grid; place-items: center;
+      font-size: 22px;
+      box-shadow: 0 2px 10px rgba(123,78,204,0.3);
+    }
+    .hero-text h3 { font-size: 13px; font-weight: 700; margin-bottom: 3px; color: var(--text); }
+    .hero-text p  { font-size: 11px; color: var(--sub); line-height: 1.55; }
+
+    /* Summary rows — Divi-style key:value rows */
+    .sum-rows { }
+    .sum-row {
+      display: flex; align-items: center;
+      padding: 9px 14px;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.12s;
+      cursor: pointer;
+    }
+    .sum-row:last-child { border-bottom: none; }
+    .sum-row:hover { background: var(--bg); }
+    .sum-row:hover .sum-copy { opacity: 1; }
+    .sum-key {
+      font-size: 12px; font-weight: 600; color: var(--text);
+      width: 90px; flex-shrink: 0;
+    }
+    .sum-val {
+      flex: 1; font-size: 12px; color: var(--sub);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .sum-copy {
+      font-size: 10px; color: var(--blue);
+      opacity: 0; transition: opacity 0.15s;
+      flex-shrink: 0; margin-left: 8px;
+      font-weight: 600;
+    }
+
+    .no-data {
+      background: var(--white); border: 1px solid var(--border);
+      border-radius: var(--r); padding: 22px; text-align: center;
+      margin-bottom: 12px;
+    }
+    .no-data .no-icon { font-size: 28px; margin-bottom: 8px; }
+    .no-data strong { display: block; color: var(--purple); font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+    .no-data p { font-size: 11px; color: var(--sub); line-height: 1.6; }
+
+    /* Fill button — Divi style: coloured with label */
+    .btn-fill {
+      width: 100%;
+      padding: 12px 16px;
+      background: linear-gradient(135deg, var(--purple) 0%, #9b6ee0 100%);
+      border: none; border-radius: var(--r);
+      color: #fff; font-size: 13px; font-weight: 700;
+      font-family: 'Open Sans', sans-serif; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      letter-spacing: 0.3px;
+      box-shadow: 0 2px 8px rgba(123,78,204,0.35);
+      transition: opacity 0.15s, transform 0.1s, box-shadow 0.15s;
+      position: relative; overflow: hidden;
+    }
+    .btn-fill::before {
+      content: '';
+      position: absolute; top: 0; left: -100%;
+      width: 60%; height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+      transition: left 0.4s;
+    }
+    .btn-fill:hover:not(:disabled)::before { left: 140%; }
+    .btn-fill:hover:not(:disabled) { box-shadow: 0 4px 16px rgba(123,78,204,0.5); transform: translateY(-1px); }
+    .btn-fill:active:not(:disabled) { transform: scale(0.99); }
+    .btn-fill:disabled {
+      background: #ccc; color: #fff; cursor: not-allowed;
+      box-shadow: none; transform: none;
+    }
+
+    /* ══ PROFILE PANEL ══ */
+    .profile-wrap {
+      background: var(--bg);
+      padding: 14px 16px;
+      max-height: 480px; overflow-y: auto;
+      scrollbar-width: thin; scrollbar-color: var(--border) transparent;
+    }
+
+    /* Divi-style setting rows */
+    .setting-section {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+    .setting-section-title {
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      padding: 8px 14px;
+      font-size: 11px; font-weight: 700;
+      color: var(--sub); text-transform: uppercase; letter-spacing: 0.6px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    /* Single full-width row */
+    .setting-row {
+      display: flex; align-items: center;
+      padding: 9px 14px;
+      border-bottom: 1px solid var(--border);
+      gap: 10px;
+    }
+    .setting-row:last-child { border-bottom: none; }
+    .setting-label {
+      font-size: 12px; font-weight: 600; color: var(--text);
+      width: 100px; flex-shrink: 0;
+    }
+    .setting-input, .setting-select {
+      flex: 1;
+      min-width: 0;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 6px 10px;
+      font-size: 12px; color: var(--text);
+      font-family: 'Open Sans', sans-serif; outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .setting-input:focus, .setting-select:focus {
+      border-color: var(--purple);
+      box-shadow: 0 0 0 2px rgba(123,78,204,0.15);
+      background: var(--white);
+    }
+    .setting-input::placeholder { color: var(--light); }
+    .setting-select {
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23aaa'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 8px center;
+      padding-right: 24px; cursor: pointer;
+    }
+    /* Two columns inside a section — each col is a full setting-row */
+    .row-2col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      border-bottom: 1px solid var(--border);
+    }
+    .row-2col:last-child { border-bottom: none; }
+    .row-2col .half-row {
+      display: flex; align-items: center;
+      padding: 9px 12px; gap: 8px;
+    }
+    .row-2col .half-row:first-child {
+      border-right: 1px solid var(--border);
+    }
+    .half-label {
+      font-size: 11px; font-weight: 600; color: var(--text);
+      white-space: nowrap; flex-shrink: 0;
+    }
+    .half-input, .half-select {
+      flex: 1; min-width: 0;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 5px 7px;
+      font-size: 11.5px; color: var(--text);
+      font-family: 'Open Sans', sans-serif; outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .half-input:focus, .half-select:focus {
+      border-color: var(--purple);
+      box-shadow: 0 0 0 2px rgba(123,78,204,0.12);
+      background: var(--white);
+    }
+    .half-input::placeholder { color: var(--light); }
+    .half-select {
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%23aaa'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 6px center;
+      padding-right: 20px; cursor: pointer;
+    }
+
+    .save-bar {
+      display: flex; gap: 8px; padding: 12px 16px;
+      background: var(--white); border: 1px solid var(--border);
+      border-radius: var(--r);
+    }
+    .btn-save {
+      flex: 1; padding: 10px;
+      background: linear-gradient(135deg, var(--purple), #9b6ee0);
+      border: none; border-radius: var(--r);
+      color: #fff; font-size: 13px; font-weight: 700;
+      font-family: 'Open Sans', sans-serif; cursor: pointer;
+      letter-spacing: 0.2px;
+      box-shadow: 0 2px 6px rgba(123,78,204,0.3);
+      transition: opacity 0.15s, transform 0.1s;
+    }
+    .btn-save:hover { opacity: 0.9; }
+    .btn-save:active { transform: scale(0.98); }
+    .btn-danger {
+      padding: 10px 14px;
+      background: var(--white); border: 1px solid #e0b0b0;
+      border-radius: var(--r); color: var(--red);
+      font-size: 13px; cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn-danger:hover { background: #fef5f5; }
+
+    /* ══ SETTINGS PANEL ══ */
+    .settings-wrap {
+      background: var(--bg);
+      padding: 14px 16px;
+    }
+    .toggle-row {
+      display: flex; align-items: center;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      gap: 10px; cursor: pointer;
+      transition: background 0.12s;
+    }
+    .toggle-row:hover { background: var(--purple-l); }
+    .toggle-row:last-child { border-bottom: none; }
+    .toggle-label { flex: 1; }
+    .toggle-label div:first-child { font-size: 12px; font-weight: 600; color: var(--text); }
+    .toggle-label div:last-child  { font-size: 10px; color: var(--sub); margin-top: 1px; }
+
+    /* Divi-style toggle switch */
+    .toggle-switch {
+      position: relative; width: 44px; height: 22px; flex-shrink: 0;
+    }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+    .toggle-track {
+      position: absolute; inset: 0; border-radius: 11px;
+      background: #ccc; cursor: pointer; transition: background 0.2s;
+    }
+    .toggle-track::after {
+      content: '';
+      position: absolute; top: 3px; left: 3px;
+      width: 16px; height: 16px; border-radius: 50%;
+      background: #fff; transition: transform 0.2s;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+    .toggle-switch input:checked + .toggle-track { background: var(--purple); }
+    .toggle-switch input:checked + .toggle-track::after { transform: translateX(22px); }
+
+    .io-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .btn-io {
+      padding: 9px; background: var(--white);
+      border: 1px solid var(--border); border-radius: var(--r);
+      font-size: 12px; font-weight: 600;
+      font-family: 'Open Sans', sans-serif;
+      color: var(--sub); cursor: pointer; text-align: center;
+      transition: all 0.15s;
+    }
+    .btn-io:hover { border-color: var(--purple); color: var(--purple); background: var(--purple-l); }
+    #import-file { display: none; }
+
+    .tip-box {
+      background: var(--blue-l);
+      border-left: 3px solid var(--blue);
+      border-radius: 0 var(--r) var(--r) 0;
+      padding: 9px 12px; margin-top: 10px;
+      font-size: 11px; color: #005a87; line-height: 1.6;
+    }
+    .tip-box b { color: #004a70; }
+
+    .about-card {
+      background: var(--white); border: 1px solid var(--border);
+      border-radius: var(--r); padding: 12px 14px;
+      font-size: 11px; color: var(--sub); line-height: 1.8; margin-top: 10px;
+    }
+    .about-card b { color: var(--text); }
+    .version-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      background: var(--purple-l); color: var(--purple);
+      border: 1px solid rgba(123,78,204,0.25);
+      border-radius: 20px; padding: 2px 8px;
+      font-size: 10px; font-weight: 700; margin-bottom: 8px;
+    }
+
+    /* ══ TOAST ══ */
+    .toast {
+      position: fixed; bottom: 12px; left: 50%;
+      transform: translateX(-50%) translateY(50px);
+      padding: 8px 18px; border-radius: 20px;
+      font-size: 12px; font-weight: 600;
+      transition: transform 0.28s cubic-bezier(.34,1.56,.64,1);
+      z-index: 999; white-space: nowrap; pointer-events: none;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+      background: var(--text); color: #fff;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+    .toast.green  { background: var(--green);  color: #fff; }
+    .toast.purple { background: var(--purple); color: #fff; }
+    .toast.blue   { background: var(--blue);   color: #fff; }
+  </style>
+</head>
+<body>
+
+<!-- ══ HEADER ══ -->
+<div class="hdr">
+  <div class="brand">
+    <div class="logo-svg-wrap">
+      <svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="hexG" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%"   stop-color="#1a0a3d"/>
+            <stop offset="100%" stop-color="#0d1428"/>
+          </linearGradient>
+          <linearGradient id="boltG" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%"   stop-color="#ffffff"/>
+            <stop offset="100%" stop-color="#e0d0ff"/>
+          </linearGradient>
+          <filter id="glow2">
+            <feGaussianBlur stdDeviation="1" result="b"/>
+            <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+        <polygon points="20,2 35,11 35,29 20,38 5,29 5,11"
+                 fill="url(#hexG)" stroke="rgba(255,255,255,0.4)" stroke-width="1.2"/>
+        <circle cx="20" cy="2"  r="1.2" fill="rgba(255,255,255,0.5)"/>
+        <circle cx="35" cy="11" r="1.2" fill="rgba(255,255,255,0.5)"/>
+        <circle cx="35" cy="29" r="1.2" fill="rgba(255,255,255,0.5)"/>
+        <circle cx="20" cy="38" r="1.2" fill="rgba(255,255,255,0.5)"/>
+        <circle cx="5"  cy="29" r="1.2" fill="rgba(255,255,255,0.5)"/>
+        <circle cx="5"  cy="11" r="1.2" fill="rgba(255,255,255,0.5)"/>
+        <path d="M23,8 L15,21 L20,21 L17,32 L25,19 L20,19 Z"
+              fill="url(#boltG)" filter="url(#glow2)"/>
+      </svg>
+    </div>
+    <div class="brand-text">
+      <div class="brand-name">SmartFill</div>
+      <div class="brand-sub">Auto Form Filler</div>
+    </div>
+  </div>
+  <div class="comp-pill">
+    <div class="comp-nums"><span id="comp-count">0</span> / 18 fields</div>
+    <div class="comp-bar-bg">
+      <div class="comp-bar-fill" id="comp-bar"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ NAV TABS ══ -->
+<div class="nav-tabs">
+  <div class="nav-tab active" data-nav="fill">⚡ Fill Form</div>
+  <div class="nav-tab" data-nav="profile">👤 Profile</div>
+  <div class="nav-tab" data-nav="settings">⚙ Settings</div>
+</div>
+
+<!-- ══ FILL PANEL ══ -->
+<div class="panel active" id="panel-fill">
+  <div class="fill-wrap">
+
+    <div class="last-bar" id="last-bar">
+      ✅ <span id="last-text">Last filled just now</span>
+    </div>
+
+    <!-- Hero -->
+    <div class="content-card" style="margin-bottom:12px">
+      <div class="card-body">
+        <div class="hero-row">
+          <div class="hero-icon-wrap">🎯</div>
+          <div class="hero-text">
+            <h3>One click. All fields filled.</h3>
+            <p>Your saved details are instantly entered into any form — Google Forms, college portals, job sites and more.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Profile summary -->
+    <div id="summary-area"></div>
+
+    <button class="btn-fill" id="btn-fill" disabled>
+      ⚡ &nbsp;FILL THIS FORM
+    </button>
+  </div>
+</div>
+
+<!-- ══ PROFILE PANEL ══ -->
+<div class="panel" id="panel-profile">
+  <div class="profile-wrap">
+
+    <!-- Academic -->
+    <div class="setting-section">
+      <div class="setting-section-title">🎓 Academic Information</div>
+      <div class="setting-row">
+        <div class="setting-label">UID / Enrollment</div>
+        <input class="setting-input" id="uid" placeholder="e.g. a23cs001"/>
+      </div>
+      <div class="setting-row">
+        <div class="setting-label">Branch / Dept.</div>
+        <input class="setting-input" id="branch" placeholder="e.g. AIML, CSE, ECE"/>
+      </div>
+      <div class="setting-row">
+        <div class="setting-label">Section</div>
+        <input class="setting-input" id="section" placeholder="e.g. A, B, C"/>
+      </div>
+      <div class="setting-row">
+        <div class="setting-label">Semester</div>
+        <input class="setting-input" id="semester" placeholder="e.g. 5th, 6th"/>
+      </div>
+      <div class="setting-row">
+        <div class="setting-label">Year</div>
+        <input class="setting-input" id="year" placeholder="e.g. 3rd Year"/>
+      </div>
+      <div class="setting-row">
+        <div class="setting-label">College</div>
+        <input class="setting-input" id="college" placeholder="Full college name"/>
+      </div>
+    </div>
+
+    <!-- Personal -->
+    <div class="setting-section">
+      <div class="setting-section-title">👤 Personal Details</div>
+      <div class="setting-row">
+        <div class="setting-label">First Name</div>
+        <input class="setting-input" id="firstName" placeholder="Your first name"/>
+      </div>
+      <div class="setting-row">
+        <div class="setting-label">Last Name</div>
+        <input class="setting-input" id="lastName" placeholder="Your last name"/>
+      </div>
+      <div class="setting-row">
+        <div class="setting-label">Full Name</div>
+        <input class="setting-input" id="fullName" placeholder="First + Last (auto-filled if blank)"/>
+      </div>
+      <div class="setting-row">
+        <div class="setting-label">Gender</div>
+        <input class="setting-input" id="gender" placeholder="e.g. Male, Female"/>
+      </div>
+      <div class="setting-row">
+        <div class="setting-label">Date of Birth</div>
+        <input class="setting-input" id="dob" placeholder="e.g. 01/01/2003"/>
+      </div>
+    </div>
+
+    <!-- Contact -->
+    <div class="setting-section">
+      <div class="setting-section-title">📬 Contact Info</div>
+      <div class="setting-row">
+        <div class="setting-label">Email</div>
+        <input class="setting-input" id="email" type="email" placeholder="your@email.com"/>
+      </div>
+      <div class="setting-row">
+        <div class="setting-label">Phone</div>
+        <input class="setting-input" id="phone" placeholder="+91 XXXXX XXXXX"/>
+      </div>
+      <div class="setting-row">
+        <div class="setting-label">WhatsApp</div>
+        <input class="setting-input" id="whatsapp" placeholder="If different from phone"/>
+      </div>
+      <div class="setting-row">
+        <div class="setting-label">City</div>
+        <input class="setting-input" id="city" placeholder="Your city"/>
+      </div>
+      <div class="setting-row">
+        <div class="setting-label">State</div>
+        <input class="setting-input" id="state" placeholder="Your state"/>
+      </div>
+      <div class="setting-row">
+        <div class="setting-label">Address</div>
+        <input class="setting-input" id="address" placeholder="Full address (optional)"/>
+      </div>
+      <div class="setting-row">
+        <div class="setting-label">Pincode</div>
+        <input class="setting-input" id="pincode" placeholder="e.g. 141001"/>
+      </div>
+    </div>
+
+    <!-- Online -->
+    <div class="setting-section">
+      <div class="setting-section-title">🔗 Online Profiles</div>
+      <div class="setting-row">
+        <div class="setting-label">LinkedIn</div>
+        <input class="setting-input" id="linkedin" placeholder="linkedin.com/in/yourname"/>
+      </div>
+      <div class="setting-row">
+        <div class="setting-label">GitHub</div>
+        <input class="setting-input" id="github" placeholder="github.com/yourname"/>
+      </div>
+      <div class="setting-row">
+        <div class="setting-label">Portfolio</div>
+        <input class="setting-input" id="portfolio" placeholder="yoursite.com"/>
+      </div>
+    </div>
+
+    <!-- Save bar -->
+    <div class="save-bar">
+      <button class="btn-save" id="btn-save">💾 Save Profile</button>
+      <button class="btn-danger" id="btn-clear">🗑 Clear</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══ SETTINGS PANEL ══ -->
+<div class="panel" id="panel-settings">
+  <div class="settings-wrap">
+
+    <!-- Toggle options -->
+    <div class="setting-section">
+      <div class="setting-section-title">⚙ Fill Options</div>
+
+      <label class="toggle-row">
+        <div class="toggle-label">
+          <div>Highlight filled fields</div>
+          <div>Show a purple glow on auto-filled inputs for 3s</div>
+        </div>
+        <div class="toggle-switch">
+          <input type="checkbox" id="opt-highlight" checked/>
+          <div class="toggle-track"></div>
+        </div>
+      </label>
+
+      <label class="toggle-row">
+        <div class="toggle-label">
+          <div>Skip already filled fields</div>
+          <div>Don't overwrite fields that already have a value</div>
+        </div>
+        <div class="toggle-switch">
+          <input type="checkbox" id="opt-skip" checked/>
+          <div class="toggle-track"></div>
+        </div>
+      </label>
+
+      <label class="toggle-row">
+        <div class="toggle-label">
+          <div>Fill dropdown menus</div>
+          <div>Auto-select matching options in select fields</div>
+        </div>
+        <div class="toggle-switch">
+          <input type="checkbox" id="opt-dropdowns" checked/>
+          <div class="toggle-track"></div>
+        </div>
+      </label>
+    </div>
+
+    <!-- Export / Import -->
+    <div class="setting-section">
+      <div class="setting-section-title">📦 Backup & Restore</div>
+      <div style="padding:12px 14px">
+        <div class="io-row">
+          <button class="btn-io" id="btn-export">⬇ Export Profile</button>
+          <button class="btn-io" id="btn-import-trigger">⬆ Import Profile</button>
+        </div>
+        <input type="file" id="import-file" accept=".json"/>
+      </div>
+    </div>
+
+    <div class="tip-box">
+      💡 <b>Tip:</b> Set a keyboard shortcut at <code>chrome://extensions/shortcuts</code> to fill forms without even opening this popup.
+    </div>
+
+    <div class="about-card">
+      <div class="version-badge">⚡ SmartFill v1.2</div><br>
+      Data stored <b>only in your browser</b> — never uploaded or shared.<br>
+      Works on: <b>Google Forms · college portals · job sites · Typeform</b>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script src="popup.js"></script>
+</body>
+</html>
